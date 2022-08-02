@@ -116,7 +116,7 @@ function cecho_function ()
 # 
 function load_version_file_function ()
 {
-Version_File="/tmp/.Version_info.txt"
+local Version_File="/tmp/linux_srv_status.txt"
 
 if [[ -f $Version_File ]]; then
         #statements
@@ -467,6 +467,50 @@ function _echo_usage
 }
 #
 #--------------------------------------------------------------------------------------------------#
+function get_distribution_and_os_name_os_version_function () 
+{
+
+if [ -f /etc/os-release ]; then
+    #  For systemd compatible servers
+    # shellcheck disable=SC1091
+    source /etc/os-release
+    _distribution_family="RedHat"
+    _os_name=$NAME
+    _os_version=$VERSION_ID
+elif type lsb_release >/dev/null 2>&1; then
+    # linuxbase.org
+    _distribution_family="Unknown"
+    _os_name=$(lsb_release -si)
+    _os_version=$(lsb_release -sr)
+elif [ -f /etc/lsb-release ]; then
+    # For some versions of Debian/Ubuntu without lsb_release command
+    _distribution_family="RedHat"
+    # shellcheck disable=SC1091
+    source /etc/lsb-release
+    _os_name=$DISTRIB_ID
+    _os_version=$DISTRIB_RELEASE
+elif [ -f /etc/debian_version ]; then
+    _distribution_family="Debian"
+    # Older Debian/Ubuntu/etc.
+    _os_name=Debian
+    _os_version=$(cat /etc/debian_version)
+elif [ -f /etc/SuSe-release ]; then
+    _distribution_family="SuSE"
+    # Older SuSE/etc.
+    
+elif [ -f /etc/redhat-release ]; then
+    # Older Red Hat, CentOS, etc.
+    _distribution_family="RedHat"
+
+else
+    # Fall back to uname, e.g. "Linux <version>", also works for BSD, etc.
+    _distribution_family="Unknown"
+    _os_name=$(uname -s)
+    _os_version=$(uname -r)
+fi
+
+}
+
 # 
 #--------------------------------------------------------------------------------------------------#
 ############################# Global Function  Section Ended #######################################
@@ -477,7 +521,7 @@ function _echo_usage
 #==================================================================================================#
 # Running Script : Script Body section started  
 #==================================================================================================#
-rm -f /tmp/.Version_info.txt
+rm -f /tmp/linux_srv_status.txt
 load_version_file_function
 white "script_dir:$script_dir"
 white "Runcontrl_dir:$Runcontrl_dir"
@@ -506,3 +550,8 @@ draw_line_function
 # Running Script : Script Body section Ended  
 #==================================================================================================#
 # 
+get_distribution_and_os_name_os_version_function
+#
+info_msg "_distribution_family: $_distribution_family _os_name: $_os_name _os_version: $_os_version"
+
+info_msg "added commit "
